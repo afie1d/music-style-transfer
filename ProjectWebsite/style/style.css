@@ -1,0 +1,45 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f9;
+}
+
+.container {
+    text-align: center;
+}
+
+h1 {
+    font-size: 2em;
+    color: #333;
+}
+
+.drop-area {
+    border: 2px dashed #ddd;
+    padding: 30px;
+    margin-top: 20px;
+    border-radius: 8px;
+    background-color: #fafafa;
+    transition: background-color 0.3s;
+}
+
+.drop-area.dragover {
+    background-color: #e0e0e0;
+}
+
+.drop-area p {
+    font-size: 1.1em;
+    color: #555;
+}
+
+.result {
+    margin-top: 20px;
+}
+
+#genreOutput {
+    font-weight: bold;
+    color: #333;
+}

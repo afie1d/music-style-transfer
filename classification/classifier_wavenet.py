@@ -3,6 +3,9 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from data_pipeline import create_ds
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+import numpy as np
 
 class Network(nn.Module):
     def __init__(self, num_classes):
@@ -16,12 +19,12 @@ class Network(nn.Module):
         
         self.conv4 = nn.Conv2d(128, 128, kernel_size=(3, 3), dilation=(8, 8), padding=(8, 8))
         self.conv5 = nn.Conv2d(128, 128, kernel_size=(3, 3), dilation=(4, 4), padding=(4, 4))
-        self.conv6 = nn.Conv2d(128, 64, kernel_size=(3, 3), dilation=(2, 2), padding=(2, 2))
+        self.conv6 = nn.Conv2d(128, 128, kernel_size=(3, 3), dilation=(2, 2), padding=(2, 2))
         
-        self.residual2 = nn.Conv2d(128, 64, kernel_size=(1, 1))  # To match dimensions
+        self.residual2 = nn.Conv2d(128, 128, kernel_size=(1, 1))  # To match dimensions
         
         self.global_pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(64, num_classes)
+        self.fc = nn.Linear(128, num_classes)
         self.relu = nn.ReLU()
         self.dropout = nn.Dropout(0.3)
 
@@ -52,6 +55,7 @@ class Network(nn.Module):
 
 # Training loop
 def train_model(model, train_loader, val_loader, criterion, optimizer, epochs=20):
+    all_train_loss = []; all_val_loss = []
     for epoch in range(epochs):
         model.train()
         train_loss = 0
@@ -65,6 +69,8 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs=20
             optimizer.step()
             
             train_loss += loss.item()
+
+        all_train_loss.append(train_loss)
         
         val_loss = 0
         model.eval()
@@ -74,11 +80,15 @@ def train_model(model, train_loader, val_loader, criterion, optimizer, epochs=20
                 outputs = model(X_batch)
                 loss = criterion(outputs, y_batch)
                 val_loss += loss.item()
+
+        all_val_loss.append(val_loss)
         
         print(f"Epoch {epoch + 1}/{epochs}, Train Loss: {train_loss / len(train_loader):.4f}, Val Loss: {val_loss / len(val_loader):.4f}")
         if epoch % 25 == 0:
             acc = validate(model, val_loader)
             print("VALIDATION ACCURACY", acc, "%")
+        
+        return all_train_loss, all_val_loss
 
 # Prepare the data for PyTorch
 def prepare_dataloader(X_train, X_val, y_train, y_val, batch_size=32):
@@ -130,9 +140,22 @@ train_loader, val_loader = prepare_dataloader(X_train, X_val, y_train, y_val)
 criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-train_model(model, train_loader, val_loader, criterion, optimizer, epochs=100)
+train_loss, val_loss = train_model(model, train_loader, val_loader, criterion, optimizer, epochs=150)
 final_acc = validate(model, val_loader)
 print("Final Validation Accuracy", final_acc, "%")
+
+# Plot losses
+plt.figure(figsize=(10, 6))
+plt.plot(epochs, train_loss, label='Training Loss')
+plt.plot(epochs, val_loss, label='Validation Loss')
+plt.xlabel('Epochs')
+plt.ylabel('Loss')
+plt.title('Training and Validation Loss')
+plt.legend()
+plt.grid(False)
+plt.show()
+
+# Plot confusion matrix
 
 torch.save(model.state_dict(), "./wn_state_dict.pth")
 

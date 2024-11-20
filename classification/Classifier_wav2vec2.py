@@ -43,14 +43,6 @@ dataset_dict = {
 # Convert to a Hugging Face Dataset
 dataset = Dataset.from_dict(dataset_dict)
 
-# Check the first few entries in the dataset
-#print(dataset[:5])
-
-
-
-
-
-
 
 def preprocess_audio(example):
     # Load audio using librosa (at the correct sampling rate)
@@ -77,16 +69,6 @@ def preprocess_audio(example):
 # Apply the preprocessing function to the dataset
 dataset = dataset.map(preprocess_audio, remove_columns=["audio_path"])
 
-# Check the dataset structure
-#print(dataset[0])
-
-
-
-
-
-
-
-
 
 # Split dataset into training, validation, and test sets (80/10/10 split)
 dataset = dataset.shuffle(seed=42)  # Shuffle the dataset for randomness
@@ -101,15 +83,6 @@ test_dataset = dataset.select(range(train_size + val_size, len(dataset)))
 print(f"Train size: {len(train_dataset)}")
 print(f"Validation size: {len(val_dataset)}")
 print(f"Test size: {len(test_dataset)}")
-
-
-
-
-
-
-
-
-
 
 
 # Load the pre-trained model
@@ -134,33 +107,9 @@ model.classifier = torch.nn.Sequential(
     torch.nn.Linear(512, num_labels)  # Set the final layer to have 'num_labels' units (e.g., 10 for 10 classes)
 )
 
-# =============================================================================
-# # Replace the classifier (the final layer) to match the number of labels
-# model.classifier = torch.nn.Sequential(
-#     torch.nn.Linear(hidden_size // 4, 512),
-#     torch.nn.ReLU(),
-#     torch.nn.Dropout(0.1),
-#     torch.nn.Linear(512, 64),
-#     torch.nn.ReLU(),
-#     torch.nn.Dropout(0.1),
-#     torch.nn.Linear(64, num_labels)  # Set the final layer to have 'num_labels' units (e.g., 10 for 10 classes)
-# )
-# =============================================================================
-
-
-# Hyperparameters
-num_epochs = 1000
-batch_size = 16
-
-
-
-
-
-
-
-
-
-
+#model_parameters = torch.load("wav2vec2.pth")
+model_parameters = torch.load("transformer_model_split_10.pth")
+model.load_state_dict(model_parameters)
 
 
 # Define training arguments
@@ -168,9 +117,9 @@ training_args = TrainingArguments(
     output_dir="./results",
     save_strategy="no",
     evaluation_strategy="no",
-    num_train_epochs=num_epochs,
-    per_device_train_batch_size=batch_size,
-    per_device_eval_batch_size=batch_size,
+    num_train_epochs=10,
+    per_device_train_batch_size=16,
+    per_device_eval_batch_size=1,
     logging_dir=None,
     logging_strategy="no"
 )
@@ -182,33 +131,17 @@ trainer = Trainer(
     eval_dataset=val_dataset
 )
 
-
-
 # Start fine-tuning
-trainer.train()
-
-
-
-
-
-
-
-
-
-
-
+#trainer.train()
 
 
 # Evaluate the model on the test dataset
-#results = trainer.evaluate(test_dataset)
 pred_results = trainer.predict(test_dataset)
 
 actual = test_dataset["label"]
 actual = np.array(actual)
 logits = pred_results[0]
 predictions = np.argmax(logits, axis=1)
-
-
 
 def calculate_accuracy(labels, predictions):
     # Convert labels and predictions to numpy arrays (in case they're lists or other types)
@@ -227,11 +160,3 @@ def calculate_accuracy(labels, predictions):
     return accuracy
 
 accuracy = calculate_accuracy(actual, predictions)
-
-
-
-
-
-
-torch.save(model.state_dict(), "transformer_model_1000.pth")
-

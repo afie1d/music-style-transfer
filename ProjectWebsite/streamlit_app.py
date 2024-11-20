@@ -7,7 +7,7 @@ from tensorflow.keras.models import load_model
 import soundfile as sf
 
 # Load the trained genre classification model (ensure this model file exists in your directory)
-genre_classifier = load_model("yamnet.h5")
+genre_classifier = load_model("./app/yamnet.h5")
 
 # Load the YAMNet model from TensorFlow Hub
 yamnet_model = hub.load("https://tfhub.dev/google/yamnet/1")
